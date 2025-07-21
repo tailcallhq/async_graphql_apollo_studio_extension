@@ -7,8 +7,8 @@ use futures::{
 use protobuf::Message;
 
 use crate::{
-    proto::reports::{Report, ReportHeader, Trace, TracesAndStats},
     packages::uname,
+    proto::reports::{Report, ReportHeader, Trace, TracesAndStats},
     runtime::{abort, spawn, Instant, JoinHandle},
 };
 
@@ -33,10 +33,12 @@ impl ReportAggregator {
         graph_id: String,
         variant: String,
         service_version: String,
+        agent_id: String,
     ) -> Self {
         let (tx, mut rx) = mpsc::channel::<(String, Trace)>(BUFFER_SLOTS);
 
         let reported_header = ReportHeader {
+            agent_id,
             uname: uname::uname()
                 .ok()
                 .unwrap_or_else(|| "No uname provided".to_string()),
