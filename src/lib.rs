@@ -30,14 +30,14 @@ mod proto;
 pub mod register;
 mod report_aggregator;
 
-mod runtime;
 mod packages;
+mod runtime;
 
 use futures::SinkExt;
+use packages::serde_json;
 use protobuf::{well_known_types::timestamp::Timestamp, EnumOrUnknown, MessageField};
 use report_aggregator::ReportAggregator;
 use runtime::spawn;
-use packages::serde_json;
 
 #[macro_use]
 extern crate tracing;
@@ -126,6 +126,7 @@ impl ApolloTracing {
         graph_id: String,
         variant: String,
         service_version: String,
+        agent_id: String,
     ) -> ApolloTracing {
         let report = ReportAggregator::initialize(
             authorization_token,
@@ -133,6 +134,7 @@ impl ApolloTracing {
             graph_id,
             variant,
             service_version,
+            agent_id,
         );
 
         ApolloTracing {
@@ -186,8 +188,10 @@ impl Extension for ApolloTracingExtension {
             .filter(|(_, operation)| operation.node.ty == OperationType::Query)
             .any(|(_, operation)| operation.node.selection_set.node.items.iter().any(|selection| matches!(&selection.node, Selection::Field(field) if field.node.name.node == "__schema")));
         if !is_schema {
-            let result: String =
-                ctx.stringify_execute_doc(&document, &Variables::from_json(serde_json::from_str("{}").unwrap()));
+            let result: String = ctx.stringify_execute_doc(
+                &document,
+                &Variables::from_json(serde_json::from_str("{}").unwrap()),
+            );
             let name = document
                 .operations
                 .iter()
